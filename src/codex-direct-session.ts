@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { ISession, NdjsonEvent, CliResponse, OpenAIMessage } from './types.js';
 import type { ProviderConfig } from './providers/base.js';
+import { codexProvider } from './providers/codex.js';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -76,9 +77,11 @@ export class CodexDirectSession implements ISession {
   getModel(): string { return this.model; }
 
   getProvider(): ProviderConfig {
+    // Reuse the real codex provider config. The old inline stub returned
+    // normalizeEventType()=>'unknown' / extractTextContent()=>'', which made the
+    // OpenAI streaming adapter drop every text_delta this session emits.
     return {
-      binary: 'codex',
-      displayName: 'Codex (Direct)',
+      ...codexProvider,
       defaultModel: this.model,
       models: ['gpt-5.4', 'gpt-5.4-pro'],
       mode: 'per-request',
@@ -86,8 +89,6 @@ export class CodexDirectSession implements ISession {
       usesStdinPipe: false,
       buildSpawnArgs: () => [],
       buildStdinMessage: (c) => c,
-      normalizeEventType: () => 'unknown',
-      extractTextContent: () => '',
     };
   }
 

@@ -48,6 +48,8 @@ export const codexProvider: ProviderConfig = {
   },
 
   normalizeEventType(rawType: string): NormalizedEventType {
+    // CodexDirectSession streaming emits {type:'text_delta', content: delta}
+    if (rawType === 'text_delta') return 'text_delta';
     // Codex JSONL event types (verified via testing)
     if (rawType === 'item.completed') return 'text_delta';     // Contains item.text
     if (rawType === 'turn.completed') return 'result';          // Completion with usage
@@ -59,6 +61,10 @@ export const codexProvider: ProviderConfig = {
 
   extractTextContent(event: NdjsonEvent): string {
     const e = event as Record<string, unknown>;
+    // CodexDirectSession streaming emits {type:'text_delta', content: delta}
+    if (typeof e.content === 'string') {
+      return e.content;
+    }
     // Codex item.completed: { type: "item.completed", item: { text: "..." } }
     const item = e.item as Record<string, unknown> | undefined;
     if (!item) return '';
