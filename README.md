@@ -116,3 +116,34 @@ Returns available models for the running provider.
 ## License
 
 MIT
+
+### Claude OpenAI compatibility (v1.0.3)
+
+The Claude route is stateless: every request runs a fresh CLI invocation and uses
+only the supplied messages. It no longer resumes a shared conversation. The CLI
+has built-in tools, external MCP servers, hooks, skills and session persistence
+disabled; API functions are always executed by the calling application.
+
+- Text-only requests stream native text deltas without duplicating complete messages.
+- `tools` uses Claude CLI structured output to choose external functions, then maps
+  the validated result to OpenAI `tool_calls`. Arguments are checked against the
+  original JSON Schema (draft-07 or 2020-12). Tool-bearing responses are buffered
+  until complete, then emitted as standard SSE chunks; argument streaming is not incremental.
+- `tool_choice` supports `auto`, `none`, `required`, and a named function.
+  `parallel_tool_calls: false` allows at most one function call.
+- Supplied assistant calls and tool results retain their IDs in a JSON conversation
+  transcript. This is a transcript adapter, not native Claude message-history injection.
+- Images must be PNG/JPEG/GIF/WebP base64 data URLs and are sent as native image
+  blocks with stable labels. Remote image URLs return 400; the HTTP body limit is 10 MB.
+- Upstream failure, missing structured output, invalid arguments and timeouts fail
+  explicitly. A failed SSE stream never ends with a successful `stop` reason.
+  Disconnects terminate the CLI process group; a maximum of four calls run at once.
+
+Open WebUI can expose this bridge as `http://claude-bridge:3456/v1`; clients of
+Open WebUI use `http://<openwebui-host>:3018/api` and model `claude-sonnet-5`.
+HR Helper requires both function calls and image support for search and scanned PDFs.
+Embeddings are a separate Open WebUI connection to an embedding-capable provider.
+
+Run `npm test` for HTTP/protocol tests with a fake CLI (no credentials required).
+Live acceptance should also cover function call -> result -> answer, image
+transcription, and a fresh request that cannot recall the preceding conversation.
