@@ -1,4 +1,5 @@
 import express, { type Request, type Response } from 'express';
+import { createClaudeChatHandler } from './claude-chat.js';
 import { randomUUID } from 'node:crypto';
 import { RequestPacer } from './request-pacer.js';
 import {
@@ -48,6 +49,9 @@ export function createServer(
 
   // ── POST /v1/chat/completions ───────────────────────────────────
 
+  if (session.getProvider().binary === 'claude') {
+    app.post('/v1/chat/completions', createClaudeChatHandler({ workspace, model: session.getModel() }));
+  }
   app.post('/v1/chat/completions', async (req: Request, res: Response) => {
     try {
       const { messages, stream, model: requestedModel } = req.body as {
