@@ -98,17 +98,18 @@ export class CodexDirectSession implements ISession {
 
   // ── ISession messaging ──────────────────────────────────────────
 
-  async sendMessage(messages: OpenAIMessage[]): Promise<CliResponse> {
-    return this.callApi(messages, false, () => {});
+  async sendMessage(messages: OpenAIMessage[], model?: string): Promise<CliResponse> {
+    return this.callApi(messages, false, () => {}, model);
   }
 
   async sendMessageStreaming(
     messages: OpenAIMessage[],
     onEvent: (event: NdjsonEvent) => void,
+    model?: string,
   ): Promise<CliResponse> {
     return this.callApi(messages, true, (delta) => {
       onEvent({ type: 'text_delta', content: delta });
-    });
+    }, model);
   }
 
   // ── Core API call ───────────────────────────────────────────────
@@ -117,6 +118,7 @@ export class CodexDirectSession implements ISession {
     messages: OpenAIMessage[],
     _streaming: boolean,
     onDelta: (text: string) => void,
+    model?: string,
   ): Promise<CliResponse> {
     await this.ensureFreshToken();
 
@@ -140,7 +142,7 @@ export class CodexDirectSession implements ISession {
     }));
 
     const body = {
-      model: this.model,
+      model: model || this.model,
       instructions,
       input,
       stream: true,   // endpoint requires stream:true always

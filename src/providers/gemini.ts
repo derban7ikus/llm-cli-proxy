@@ -27,10 +27,13 @@ export const geminiProvider: ProviderConfig = {
   emitsInit: false,
   usesStdinPipe: true,
 
-  buildSpawnArgs(resumeSessionId: string): string[] {
+  buildSpawnArgs(resumeSessionId: string, model?: string): string[] {
     const args = [
       '--output-format', 'stream-json',
     ];
+    if (model) {
+      args.push('--model', model);
+    }
     if (resumeSessionId) {
       args.push('--resume', resumeSessionId);
     }

@@ -105,10 +105,11 @@ export interface ISession {
   getResumeSessionId(): string;
   getModel(): string;
   getProvider(): import('./providers/base.js').ProviderConfig;
-  sendMessage(messages: OpenAIMessage[]): Promise<CliResponse>;
+  sendMessage(messages: OpenAIMessage[], model?: string): Promise<CliResponse>;
   sendMessageStreaming(
     messages: OpenAIMessage[],
     onEvent: (event: NdjsonEvent) => void,
+    model?: string,
   ): Promise<CliResponse>;
   destroy(): void;
 }

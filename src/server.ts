@@ -120,7 +120,7 @@ export function createServer(
             if (chunk) {
               res.write(`data: ${JSON.stringify(chunk)}\n\n`);
             }
-          });
+          }, requestedModel);
         } catch (err) {
           // Write error as SSE event
           const errorChunk = {
@@ -141,7 +141,7 @@ export function createServer(
         res.end();
       } else {
         // ── Non-streaming ─────────────────────────────────────────
-        const response = await session.sendMessage(messages);
+        const response = await session.sendMessage(messages, requestedModel);
         const openaiResponse = toOpenAIResponse(response, model);
         res.json(openaiResponse);
       }

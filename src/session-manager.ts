@@ -47,6 +47,7 @@ export class SessionManager {
   // Request queue for single-concurrency serialization
   private requestQueue: Array<{
     content: string;  // pre-converted CLI string
+    model?: string;   // per-request model override
     onEvent?: (event: NdjsonEvent) => void;
     resolve: (response: CliResponse) => void;
     reject: (reason: Error) => void;
@@ -76,7 +77,7 @@ export class SessionManager {
     }
 
     // Persistent mode: spawn the CLI binary
-    const args = this.provider.buildSpawnArgs(this.lastProviderSessionId);
+    const args = this.provider.buildSpawnArgs(this.lastProviderSessionId, this.model);
 
     console.log(`[session] Spawning ${this.provider.binary}:`, args.join(' '));
     console.log(`[session] Working directory: ${this.workspaceDir}`);
@@ -246,10 +247,10 @@ export class SessionManager {
 
   // ── Message Sending ─────────────────────────────────────────────
 
-  sendMessage(messages: OpenAIMessage[]): Promise<CliResponse> {
+  sendMessage(messages: OpenAIMessage[], model?: string): Promise<CliResponse> {
     const content = toCliMessage(messages);
     return new Promise((resolve, reject) => {
-      this.requestQueue.push({ content, resolve, reject });
+      this.requestQueue.push({ content, model, resolve, reject });
       this.processQueue();
     });
   }
@@ -257,10 +258,11 @@ export class SessionManager {
   sendMessageStreaming(
     messages: OpenAIMessage[],
     onEvent: (event: NdjsonEvent) => void,
+    model?: string,
   ): Promise<CliResponse> {
     const content = toCliMessage(messages);
     return new Promise((resolve, reject) => {
-      this.requestQueue.push({ content, onEvent, resolve, reject });
+      this.requestQueue.push({ content, model, onEvent, resolve, reject });
       this.processQueue();
     });
   }
@@ -358,11 +360,12 @@ export class SessionManager {
 
   private executePerRequest(request: {
     content: string;
+    model?: string;
     onEvent?: (event: NdjsonEvent) => void;
   }): Promise<CliResponse> {
     return new Promise((resolve, reject) => {
-      // Build args with --resume chaining
-      const args = this.provider.buildSpawnArgs(this.lastProviderSessionId);
+      // Build args with --resume chaining and the per-request model override
+      const args = this.provider.buildSpawnArgs(this.lastProviderSessionId, request.model);
 
       // For Gemini: append --prompt with the content
       if (!this.provider.usesStdinPipe) {
@@ -370,7 +373,8 @@ export class SessionManager {
       }
 
       const isResume = !!this.lastProviderSessionId;
-      console.log(`[session] Spawning ${this.provider.binary} (${isResume ? 'resume: ' + this.lastProviderSessionId.slice(0, 8) + '...' : 'new session'})`);
+      const modelLabel = request.model ? ` model: ${request.model}` : '';
+      console.log(`[session] Spawning ${this.provider.binary} (${isResume ? 'resume: ' + this.lastProviderSessionId.slice(0, 8) + '...' : 'new session'}${modelLabel})`);
 
       const proc = spawn(this.provider.binary, args, {
         cwd: this.workspaceDir,

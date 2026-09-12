@@ -28,19 +28,27 @@ export const codexProvider: ProviderConfig = {
   emitsInit: false,
   usesStdinPipe: true,
 
-  buildSpawnArgs(resumeSessionId: string): string[] {
+  buildSpawnArgs(resumeSessionId: string, model?: string): string[] {
     if (resumeSessionId) {
-      return [
+      const args = [
         'exec', 'resume',
         '--last',
         '--json',
       ];
+      if (model) {
+        args.push('-m', model);
+      }
+      return args;
     }
-    return [
+    const args = [
       'exec',
       '--json',
       '-',  // Read prompt from stdin
     ];
+    if (model) {
+      args.push('-m', model);
+    }
+    return args;
   },
 
   buildStdinMessage(content: string): string {

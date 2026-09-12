@@ -41,8 +41,9 @@ export interface ProviderConfig {
   /**
    * Build spawn args for a request.
    * @param resumeSessionId - Session ID to resume from (empty on first request)
+   * @param model - Per-request model override (empty to use the session default)
    */
-  buildSpawnArgs(resumeSessionId: string): string[];
+  buildSpawnArgs(resumeSessionId: string, model?: string): string[];
 
   /** Build the stdin payload for the prompt (used when usesStdinPipe is true) */
   buildStdinMessage(content: string): string;
